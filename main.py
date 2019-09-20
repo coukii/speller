@@ -11,6 +11,9 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 
+currentX = 0
+currentY = 0
+
 # init pygame, create window
 pygame.init()
 pygame.mixer.init()
@@ -23,6 +26,8 @@ class Tile(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((70,70))
         self.image.fill(WHITE)
+        #self.selection = pygame.Surface((70,70))
+        #self.selection.fill(GREEN)
         self.rect = self.image.get_rect()
         self.rect.left = x
         self.rect.top = y
@@ -33,10 +38,15 @@ class Tile(pygame.sprite.Sprite):
         self.letterrender = self.letterfont.render(self.letter, True, BLACK)
         self.scorerender = self.scorefont.render(self.score, True, BLACK)
         #pygame.display.update
-
     def update(self):
         screen.blit(self.letterrender, (self.rect.centerx - (self.letterfont.size(self.letter)[0] / 2.), self.rect.centery - (self.letterfont.size(self.letter)[1] / 2.)))
         screen.blit(self.scorerender, (self.rect.right - (self.scorefont.size(self.score)[0]) - 2, self.rect.bottom - (self.scorefont.size(self.score)[1])))
+    def select(self):
+        self.rect.centerx = WIDTH / 2
+        self.rect.centery = HEIGHT / 4
+        board[currentY][currentX] = 0
+        letterlist.append(self.letter)
+        print(letterlist)
 
 class Selection(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -46,8 +56,26 @@ class Selection(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.left = x
         self.rect.top = y
+    def move(self, object):
+        self.rect.left = object.rect.left - 5
+        self.rect.top = object.rect.top + 5
+    def select(self, object):
+        print(object.letter)
+
+
+##class Letters(pygame.sprite.Sprite):
+##    def __init__(self):
+##        pygame.sprite.Sprite.__init__(self)
+##        self.list = []
+##        self.image = pygame.Surface((1, 1))
+##        self.rect = self.image.get_rect()
+##        self.rect.centerx = WIDTH / 2
+
 
 all_sprites = pygame.sprite.Group()
+bg_sprites = pygame.sprite.Group()
+
+letterlist = []
 
 board=[[0,0,0,0],
        [0,0,0,0],
@@ -62,13 +90,12 @@ for column in range(0,4):
         print("adding row", row, "column", column)
         board[row][column] = tile
 
-selectedTile = board[0][0]
+selectedTile = board[currentY][currentX]
 
-selection = Selection(selectedTile.rect.left, selectedTile.rect.top)
-all_sprites.add(selection)
+selection = Selection(selectedTile.rect.left - 5, selectedTile.rect.top + 5)
+bg_sprites.add(selection)
 
-# ADD GREEN TILES TO EVERY TILE OBJECT (BLACK AS DEFAULT)
-# ENABLE WHEN SELECTED
+#selection.move(board[board[0].index(selectedTile)][board])
 
 # Game loop
 running = True
@@ -79,9 +106,41 @@ while running:
         # Check for closing window
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if currentY < 3:
+                if event.key == pygame.K_DOWN:
+                    currentY += 1
+                    while board[currentY][currentX] == 0:
+                        currentY += 1
+                    selectedTile = board[currentY][currentX]
+                    selection.move(selectedTile)
+            if currentY > 0:
+                if event.key == pygame.K_UP:
+                    currentY -= 1
+                    while board[currentY][currentX] == 0:
+                        currentY -= 1
+                    selectedTile = board[currentY][currentX]
+                    selection.move(selectedTile)
+            if currentX < 3:
+                if event.key == pygame.K_RIGHT:
+                    currentX += 1
+                    while board[currentY][currentX] == 0:
+                        currentX += 1
+                    selectedTile = board[currentY][currentX]
+                    selection.move(selectedTile)
+            if currentX > 0:
+                if event.key == pygame.K_LEFT:
+                    currentX -= 1
+                    while board[currentY][currentX] == 0:
+                        currentX -= 1
+                    selectedTile = board[currentY][currentX]
+                    selection.move(selectedTile)
+            if event.key == pygame.K_z:
+                selectedTile.select()
 
     # Draw / render
-    screen.fill(BLACK)
+    screen.fill(BLACK)#
+    bg_sprites.draw(screen)
     all_sprites.draw(screen)
     # Update sprites
     all_sprites.update()
