@@ -110,31 +110,63 @@ while running:
             if currentY < 3:
                 if event.key == pygame.K_DOWN:
                     currentY += 1
+                    moves = 1
                     while board[currentY][currentX] == 0:
-                        currentY += 1
-                    selectedTile = board[currentY][currentX]
-                    selection.move(selectedTile)
+                        if currentY == 3:
+                            break
+                        else:
+                            currentY += 1
+                            moves += 1
+                    if board[currentY][currentX] != 0:
+                        selectedTile = board[currentY][currentX]
+                        selection.move(selectedTile)
+                    else:
+                        currentY -= moves
             if currentY > 0:
                 if event.key == pygame.K_UP:
                     currentY -= 1
+                    moves = 1
                     while board[currentY][currentX] == 0:
-                        currentY -= 1
-                    selectedTile = board[currentY][currentX]
-                    selection.move(selectedTile)
+                        if currentY == 0:
+                            break
+                        else:
+                            currentY -= 1
+                            moves += 1
+                    if board[currentY][currentX] != 0:
+                        selectedTile = board[currentY][currentX]
+                        selection.move(selectedTile)
+                    else:
+                        currentY += moves
             if currentX < 3:
                 if event.key == pygame.K_RIGHT:
                     currentX += 1
+                    moves = 1
                     while board[currentY][currentX] == 0:
-                        currentX += 1
-                    selectedTile = board[currentY][currentX]
-                    selection.move(selectedTile)
+                        if currentX == 3:
+                            break
+                        else:
+                            currentX += 1
+                            moves += 1
+                    if board[currentY][currentX] != 0:
+                        selectedTile = board[currentY][currentX]
+                        selection.move(selectedTile)
+                    else:
+                        currentX -= moves
             if currentX > 0:
                 if event.key == pygame.K_LEFT:
                     currentX -= 1
+                    moves = 1
                     while board[currentY][currentX] == 0:
-                        currentX -= 1
-                    selectedTile = board[currentY][currentX]
-                    selection.move(selectedTile)
+                        if currentX == 0:
+                            break
+                        else:
+                            currentX -= 1
+                            moves += 1
+                    if board[currentY][currentX] != 0:
+                        selectedTile = board[currentY][currentX]
+                        selection.move(selectedTile)
+                    else:
+                        currentX -= moves
             if event.key == pygame.K_z:
                 selectedTile.select()
 
