@@ -37,16 +37,22 @@ class Tile(pygame.sprite.Sprite):
         self.score = score
         self.letterrender = self.letterfont.render(self.letter, True, BLACK)
         self.scorerender = self.scorefont.render(self.score, True, BLACK)
+        self.selected = False
         #pygame.display.update
     def update(self):
         screen.blit(self.letterrender, (self.rect.centerx - (self.letterfont.size(self.letter)[0] / 2.), self.rect.centery - (self.letterfont.size(self.letter)[1] / 2.)))
         screen.blit(self.scorerender, (self.rect.right - (self.scorefont.size(self.score)[0]) - 2, self.rect.bottom - (self.scorefont.size(self.score)[1])))
     def select(self):
-        self.rect.centerx = WIDTH / 2
-        self.rect.centery = HEIGHT / 4
-        board[currentY][currentX] = 0
-        letterlist.append(self.letter)
-        print(letterlist)
+        all_sprites.remove(self)
+        self.selected = True
+        # if len(letterlist) == 0:
+        #     spelltile = Tile(self.letter, self.score, 5, HEIGHT / 3)
+        # elif len(letterlist) > 0:
+        #     spelltile = Tile(self.letter, self.score, letterlist[len(letterlist)-1].rect.right + 10, HEIGHT / 3)
+        # letterlist.append(spelltile)
+        # print(letterlist[len(letterlist)-1].letter)
+        # all_sprites.add(spelltile)
+        # print(letterlist)
 
 class Selection(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -59,9 +65,6 @@ class Selection(pygame.sprite.Sprite):
     def move(self, object):
         self.rect.left = object.rect.left - 5
         self.rect.top = object.rect.top + 5
-    def select(self, object):
-        print(object.letter)
-
 
 ##class Letters(pygame.sprite.Sprite):
 ##    def __init__(self):
@@ -98,6 +101,18 @@ bg_sprites.add(selection)
 #selection.move(board[board[0].index(selectedTile)][board])
 
 # Game loop
+
+def cancel():
+    for letter in letterlist:
+        letterlist.remove(letter)
+        letter.kill()
+
+    for row in board:
+        for column in row:
+            all_sprites.add(column)
+            column.selected = False
+    print(letterlist)
+
 running = True
 while running:
     clock.tick(FPS)
@@ -169,6 +184,8 @@ while running:
                         currentX -= moves
             if event.key == pygame.K_z:
                 selectedTile.select()
+            if event.key == pygame.K_x:
+                cancel()
 
     # Draw / render
     screen.fill(BLACK)#
