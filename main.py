@@ -45,14 +45,16 @@ class Tile(pygame.sprite.Sprite):
     def select(self):
         all_sprites.remove(self)
         self.selected = True
-        # if len(letterlist) == 0:
-        #     spelltile = Tile(self.letter, self.score, 5, HEIGHT / 3)
-        # elif len(letterlist) > 0:
-        #     spelltile = Tile(self.letter, self.score, letterlist[len(letterlist)-1].rect.right + 10, HEIGHT / 3)
-        # letterlist.append(spelltile)
+        if len(letterlist) == 0:
+            spelltile = Tile(self.letter, self.score, 5, HEIGHT / 3)
+        elif len(letterlist) > 0:
+            spelltile = Tile(self.letter, self.score, letterlist[len(letterlist)-1].rect.right + 10, HEIGHT / 3)
+        letterlist.append(spelltile)
         # print(letterlist[len(letterlist)-1].letter)
-        # all_sprites.add(spelltile)
-        # print(letterlist)
+        all_sprites.add(spelltile)
+        print()
+        for i in letterlist:
+            print(i.letter, ":", str(i.score), end=' ')
 
 class Selection(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -103,15 +105,26 @@ bg_sprites.add(selection)
 # Game loop
 
 def cancel():
-    for letter in letterlist:
-        letterlist.remove(letter)
-        letter.kill()
-
-    for row in board:
-        for column in row:
-            all_sprites.add(column)
-            column.selected = False
     print(letterlist)
+    for letter in letterlist[:]:
+        print(letter.letter, "removed")
+        letter.kill()
+        letterlist.remove(letter)
+
+        for row in board:
+            for column in row:
+                all_sprites.add(column)
+                column.selected = False
+
+def wordScore(list):
+    totalscore = 0
+    wordlist = []
+    for tile in list:
+        totalscore += tile.score
+        wordlist.append(tile.letter)
+    word = ''.join(wordlist)
+    print(word)
+    return str(totalscore)
 
 running = True
 while running:
@@ -125,67 +138,33 @@ while running:
             if currentY < 3:
                 if event.key == pygame.K_DOWN:
                     currentY += 1
-                    moves = 1
-                    while board[currentY][currentX] == 0:
-                        if currentY == 3:
-                            break
-                        else:
-                            currentY += 1
-                            moves += 1
                     if board[currentY][currentX] != 0:
                         selectedTile = board[currentY][currentX]
                         selection.move(selectedTile)
-                    else:
-                        currentY -= moves
             if currentY > 0:
                 if event.key == pygame.K_UP:
                     currentY -= 1
-                    moves = 1
-                    while board[currentY][currentX] == 0:
-                        if currentY == 0:
-                            break
-                        else:
-                            currentY -= 1
-                            moves += 1
                     if board[currentY][currentX] != 0:
                         selectedTile = board[currentY][currentX]
                         selection.move(selectedTile)
-                    else:
-                        currentY += moves
             if currentX < 3:
                 if event.key == pygame.K_RIGHT:
                     currentX += 1
-                    moves = 1
-                    while board[currentY][currentX] == 0:
-                        if currentX == 3:
-                            break
-                        else:
-                            currentX += 1
-                            moves += 1
                     if board[currentY][currentX] != 0:
                         selectedTile = board[currentY][currentX]
                         selection.move(selectedTile)
-                    else:
-                        currentX -= moves
             if currentX > 0:
                 if event.key == pygame.K_LEFT:
                     currentX -= 1
-                    moves = 1
-                    while board[currentY][currentX] == 0:
-                        if currentX == 0:
-                            break
-                        else:
-                            currentX -= 1
-                            moves += 1
                     if board[currentY][currentX] != 0:
                         selectedTile = board[currentY][currentX]
                         selection.move(selectedTile)
-                    else:
-                        currentX -= moves
-            if event.key == pygame.K_z:
+            if event.key == pygame.K_z and selectedTile.selected == False:
                 selectedTile.select()
             if event.key == pygame.K_x:
                 cancel()
+            if event.key == pygame.K_c:
+                print(wordScore(letterlist))
 
     # Draw / render
     screen.fill(BLACK)#
