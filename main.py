@@ -1,5 +1,6 @@
 import pygame
 import random
+import json
 from scores import *
 
 WIDTH = 1280
@@ -13,6 +14,8 @@ GREEN = (0, 255, 0)
 
 currentX = 0
 currentY = 0
+
+WORDDICT = json.load(open("words_dictionary.json", "r"))
 
 # init pygame, create window
 pygame.init()
@@ -68,14 +71,6 @@ class Selection(pygame.sprite.Sprite):
         self.rect.left = object.rect.left - 5
         self.rect.top = object.rect.top + 5
 
-##class Letters(pygame.sprite.Sprite):
-##    def __init__(self):
-##        pygame.sprite.Sprite.__init__(self)
-##        self.list = []
-##        self.image = pygame.Surface((1, 1))
-##        self.rect = self.image.get_rect()
-##        self.rect.centerx = WIDTH / 2
-
 
 all_sprites = pygame.sprite.Group()
 bg_sprites = pygame.sprite.Group()
@@ -100,8 +95,6 @@ selectedTile = board[currentY][currentX]
 selection = Selection(selectedTile.rect.left - 5, selectedTile.rect.top + 5)
 bg_sprites.add(selection)
 
-#selection.move(board[board[0].index(selectedTile)][board])
-
 # Game loop
 
 def cancel():
@@ -110,21 +103,30 @@ def cancel():
         print(letter.letter, "removed")
         letter.kill()
         letterlist.remove(letter)
-
         for row in board:
             for column in row:
                 all_sprites.add(column)
                 column.selected = False
 
 def wordScore(list):
-    totalscore = 0
-    wordlist = []
+    totalScore = 0
+    wordList = []
     for tile in list:
-        totalscore += tile.score
-        wordlist.append(tile.letter)
-    word = ''.join(wordlist)
-    print(word)
-    return str(totalscore)
+        totalScore += int(tile.score)
+        wordList.append(tile.letter)
+    word = ''.join(wordList)
+    if len(word) > 2:
+        if word.lower() in WORDDICT:
+            return word + ": " + str(totalScore) + " POINTS"
+            print(list)
+            for letter in list[:]:
+                print(letter.letter, "removed")
+                letter.kill()
+                letterlist.remove(letter)
+        else:
+            return "WORD DOES NOT EXIST!"
+    else:
+        return "WORD TOO SHORT!"
 
 running = True
 while running:
@@ -164,10 +166,11 @@ while running:
             if event.key == pygame.K_x:
                 cancel()
             if event.key == pygame.K_c:
-                print(wordScore(letterlist))
+                if len(letterlist) > 0:
+                    print(wordScore(letterlist))
 
     # Draw / render
-    screen.fill(BLACK)#
+    screen.fill(BLACK)
     bg_sprites.draw(screen)
     all_sprites.draw(screen)
     # Update sprites
