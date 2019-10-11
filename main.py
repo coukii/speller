@@ -58,6 +58,12 @@ class Tile(pygame.sprite.Sprite):
         print()
         for i in letterlist:
             print(i.letter, ":", str(i.score), end=' ')
+    def randomise(self):
+        tileInfo = random.choice(list(LETTERSCORES.items()))
+        self.letter = tileInfo[0]
+        self.score = str(tileInfo[1])
+        self.letterrender = self.letterfont.render(self.letter, True, BLACK)
+        self.scorerender = self.scorefont.render(self.score, True, BLACK)
 
 class Selection(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -70,6 +76,19 @@ class Selection(pygame.sprite.Sprite):
     def move(self, object):
         self.rect.left = object.rect.left - 5
         self.rect.top = object.rect.top + 5
+
+class HUD():
+    def __init__(self):
+        self.font = pygame.font.Font('FSEX302.ttf', 50)
+    def update(self):
+        pass
+    def display(self, text):
+        self.textSurface = self.font.render(text, False, WHITE)
+        self.textRect = self.textSurface.get_rect()
+        self.textRect.center = (WIDTH / 2, HEIGHT / 2)
+        screen.blit(self.textSurface, self.textRect)
+        # self.last = pygame.time.get_ticks()
+        # now = pygame.time.get_ticks()
 
 
 all_sprites = pygame.sprite.Group()
@@ -103,30 +122,38 @@ def cancel():
         print(letter.letter, "removed")
         letter.kill()
         letterlist.remove(letter)
-        for row in board:
-            for column in row:
-                all_sprites.add(column)
-                column.selected = False
+    for row in board:
+        for column in row:
+            all_sprites.add(column)
+            column.selected = False
 
-def wordScore(list):
+def wordScore(inputList):
     totalScore = 0
     wordList = []
-    for tile in list:
+    for tile in inputList:
         totalScore += int(tile.score)
         wordList.append(tile.letter)
     word = ''.join(wordList)
     if len(word) > 2:
         if word.lower() in WORDDICT:
+            for tile in inputList[:]:
+                print(tile.letter, "removed")
+                tile.kill()
+                inputList.remove(tile)
+            for row in board:
+                for column in row:
+                    if column.selected == True:
+                        print(column.letter)
+                        column.randomise()
+                        all_sprites.add(column)
+                        column.selected = False
             return word + ": " + str(totalScore) + " POINTS"
-            print(list)
-            for letter in list[:]:
-                print(letter.letter, "removed")
-                letter.kill()
-                letterlist.remove(letter)
         else:
             return "WORD DOES NOT EXIST!"
     else:
         return "WORD TOO SHORT!"
+
+hud = HUD()
 
 running = True
 while running:
@@ -168,13 +195,19 @@ while running:
             if event.key == pygame.K_c:
                 if len(letterlist) > 0:
                     print(wordScore(letterlist))
+                    counter = 0
+                    while counter < 30:
+                        hud.display(wordScore(letterlist))
+                        counter += 1
 
     # Draw / render
     screen.fill(BLACK)
     bg_sprites.draw(screen)
     all_sprites.draw(screen)
+
     # Update sprites
     all_sprites.update()
+    hud.update()
     # Flip the display
     pygame.display.flip()
 
