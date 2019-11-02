@@ -92,6 +92,17 @@ class HUD(pygame.sprite.Sprite):
         self.scoreSurface, self.scoreRect = self.renderText(str(score), WHITE, 40, 40)
         screen.blit(self.scoreSurface, self.scoreRect)
 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, health, damage):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((50, 100))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.bottom = HEIGHT / 2
+        self.rect.right = WIDTH - 100
+        self.health = health
+        self.damage = damage
+
 all_sprites = pygame.sprite.Group()
 bg_sprites = pygame.sprite.Group()
 
@@ -114,6 +125,9 @@ selectedTile = board[currentY][currentX]
 
 selection = Selection(selectedTile.rect.left - 5, selectedTile.rect.top + 5)
 bg_sprites.add(selection)
+
+enemy = Enemy(10, 10)
+all_sprites.add(enemy)
 
 def cancel():
     print(letterlist)
