@@ -110,24 +110,35 @@ class Projectile(pygame.sprite.Sprite):
         self.image = pygame.Surface((20, 20))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.xvel = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
-        self.yvel = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
-        self.rect.centerx = (WIDTH / 2) - (self.xvel*50)
+        self.boardRect = game.boardRect
         self.game = game
         self.timer = pygame.time.get_ticks()
-        if self.xvel == -4 or self.xvel == 4:  # talk about adding the second self.xvel
-            self.rect.centery = (HEIGHT * 0.75) - (self.yvel*50)
 
-        else:
-            self.rect.centery = (HEIGHT / 2)
-            self.yvel = random.choice([1, 2, 3, 4])
+        self.side = random.choice([1])
+        if self.side == 1:
+            self.rect.centerx = self.boardRect.left - 15
+            self.rect.centery = self.boardRect.centery - 300
+            self.xvel = 3
+            self.yvel = (self.boardRect.centery - self.rect.centery) / 100
+            #print(self.yvel)
+        elif self.side == 2:
+            self.rect.centery = self.boardRect.top - 15
+            self.rect.centerx = random.randrange(self.boardRect.left, self.boardRect.right)
+        elif self.side == 3:
+            self.rect.centerx = self.boardRect.right + 15
+            self.rect.centery = random.randrange(self.boardRect.top, self.boardRect.bottom)
+            self.xvel = -3
+            self.yvel = (self.boardRect.centery - self.rect.centery) / 100
+            print(self.yvel)
 
     def update(self):
         if not self.game.screen.get_rect().contains(self.rect):
             self.kill()
             print("killing projectile")
         now = pygame.time.get_ticks()
+
         if now - self.timer > 1000:
+            print(self.yvel)
             self.rect.centerx += self.xvel
             self.rect.centery += self.yvel
 
@@ -216,6 +227,7 @@ class Game:
         self.tiles = pygame.sprite.Group()
         self.projectiles = pygame.sprite.Group()
         self.letterlist = []
+        self.boardRect = pygame.Rect(WIDTH / 2 - 165, HEIGHT / 2 + 15, 330, 330)
 
         pygame.mixer.music.play(loops=-1)
         self.board = [[0, 0, 0, 0],
@@ -264,6 +276,9 @@ class Game:
         # fill bg color
         self.screen.fill(BLACK)
 
+        # draw bounding box
+        pygame.draw.rect(self.screen, WHITE, self.boardRect, 2)
+
         # draw sprites (probably should change to LayeredUpdates)
         self.bg_sprites.draw(self.screen)
         self.all_sprites.draw(self.screen)
@@ -278,7 +293,7 @@ class Game:
 
 
         if self.playerAttacking:
-            self.drawText(self.mainFont, self.displayWord + " : " + str(self.displayScore) + " POINTS", WHITE, WIDTH / 2, (HEIGHT / 2) - 5)
+            self.drawText(self.mainFont, self.displayWord + " : " + str(self.displayScore) + " POINTS", WHITE, WIDTH / 2, (HEIGHT / 2) - 10)
 
         now = pygame.time.get_ticks()
         if self.damageCounter:
@@ -299,8 +314,8 @@ class Game:
             tile.rect.x = (WIDTH / 2 + i*80 - (len(self.letterlist)*40) + 5)
             if tile not in self.all_sprites:
                 self.all_sprites.add(tile)
-
         self.projectiles.draw(self.screen)
+
 
 
         # flip display
