@@ -62,29 +62,6 @@ class Selection(pygame.sprite.Sprite):
         self.rect.top = object.rect.top + 5
 
 
-class HUD(pygame.sprite.Sprite):
-    def __init__(self, game):
-        pygame.sprite.Sprite.__init__(self)
-        self.game = game
-#
-#     def renderText(self, text, color, x, y):
-#         self.font = pygame.font.Font('FSEX302.ttf', 60)
-#         self.textSurface = self.font.render(text, False, color)
-#         self.textRect = self.textSurface.get_rect()
-#         self.textRect.center = (x, y)
-#         return self.textSurface, self.textRect
-#
-#     def displayWordScore(self, text):
-#         self.font = pygame.font.Font('FSEX302.ttf', 60)
-#         self.wordSurface, self.wordRect = self.renderText(str(text), WHITE, WIDTH / 2, (HEIGHT / 2) - 5)
-#         self.game.screen.blit(self.wordSurface, self.wordRect)
-#
-#     def displayTotalScore(self, score):
-#         self.font = pygame.font.Font('FSEX302.ttf', 60)
-#         self.scoreSurface, self.scoreRect = self.renderText(str(score), WHITE, WIDTH / 2, 40)
-#         self.game.screen.blit(self.scoreSurface, self.scoreRect)
-
-
 class HealthBar():
     def __init__(self, game, x, y, health, onRight=False):
         self.game = game
@@ -114,37 +91,35 @@ class Projectile(pygame.sprite.Sprite):
         self.game = game
         self.timer = pygame.time.get_ticks()
 
-        self.side = random.choice([1])
+        self.side = random.choice([1,2,3])
         if self.side == 1:
             self.rect.centerx = self.boardRect.left - 15
-            self.rect.centery = self.boardRect.centery - 300
+            self.rect.centery = random.randrange(self.boardRect.top, self.boardRect.bottom)
             self.xvel = 3
-            self.yvel = (self.boardRect.centery - self.rect.centery) / 100
-            #print(self.yvel)
+            self.yvel = int((self.boardRect.centery - self.rect.centery) / 75)
         elif self.side == 2:
             self.rect.centery = self.boardRect.top - 15
             self.rect.centerx = random.randrange(self.boardRect.left, self.boardRect.right)
+            self.yvel = 3
+            self.xvel = int((self.boardRect.centerx - self.rect.centerx) / 75)
         elif self.side == 3:
             self.rect.centerx = self.boardRect.right + 15
             self.rect.centery = random.randrange(self.boardRect.top, self.boardRect.bottom)
             self.xvel = -3
-            self.yvel = (self.boardRect.centery - self.rect.centery) / 100
-            print(self.yvel)
+            self.yvel = int((self.boardRect.centery - self.rect.centery) / 75)
 
     def update(self):
         if not self.game.screen.get_rect().contains(self.rect):
             self.kill()
-            print("killing projectile")
         now = pygame.time.get_ticks()
 
         if now - self.timer > 1000:
-            print(self.yvel)
             self.rect.centerx += self.xvel
             self.rect.centery += self.yvel
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, health, damage, image):
+    def __init__(self, health, image):
         pygame.sprite.Sprite.__init__(self)
         self.image = image
         size = self.image.get_size()
@@ -153,7 +128,6 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.bottom = 300
         self.rect.right = WIDTH - 100
         self.health = health
-        self.damage = damage
         self.cooldown = 400
 
     def attack(self):
@@ -176,6 +150,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = 100
         self.health = health
         self.xp = 0
+        self.level = 1
 
     def drawXP(self, x, y):
         self.bgrect = pygame.Rect(x, y, 205, 27)
@@ -184,6 +159,10 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(self.game.screen, WHITE, self.bgrect, 2)
         pygame.draw.rect(self.game.screen, BLUE, xprect)
 
+    def levelUp(self):
+        self.level += 1
+        self.xp = self.xp - 100
+        self.health += 1
 
 class Game:
     def __init__(self):
@@ -200,8 +179,6 @@ class Game:
         self.smallFont  = self.getFont('FSEX302.ttf', 25)
         self.tileLetterFont = pygame.font.SysFont('Times New Roman', 36)
         self.tileScoreFont = pygame.font.SysFont('Times New Roman', 16)
-        # create HUD (talk about how this had to be moved from startBattle)
-        self.hud = HUD(self)
         # self.currentX = 0
         # self.currentY = 0
         # load directories
@@ -211,6 +188,7 @@ class Game:
         # load sounds
         self.dmgSound = pygame.mixer.Sound(path.join(self.sndDir, 'shoot.wav'))
         self.hurtSound = pygame.mixer.Sound(path.join(self.sndDir, 'hurt.wav'))
+        self.deathSound = pygame.mixer.Sound(path.join(self.sndDir, 'die.wav'))
         pygame.mixer.music.load(path.join(self.sndDir, 'music.ogg'))
         # load enemy sprites
         self.enemySprites = []
@@ -260,8 +238,9 @@ class Game:
         self.playerHealth = HealthBar(self, 25, 40, 0)
 
         # create player and enemy
-        self.enemy = self.spawnEnemy(random.randint(1, 10), 10)
+
         self.player = Player(self, 10)
+        self.enemy = self.spawnEnemy()
         self.all_sprites.add(self.player)
 
         # create selection (this may be moved to yourTurn later)
@@ -314,6 +293,7 @@ class Game:
             tile.rect.x = (WIDTH / 2 + i*80 - (len(self.letterlist)*40) + 5)
             if tile not in self.all_sprites:
                 self.all_sprites.add(tile)
+
         self.projectiles.draw(self.screen)
 
 
@@ -412,9 +392,11 @@ class Game:
 
             if self.enemy.health <= 0:
                 self.enemy.die()
-                self.player.xp += 20
-                self.enemy = self.spawnEnemy(random.randint(1, 10), 10)
+                self.player.xp += 30
+                self.enemy = self.spawnEnemy()
 
+            if self.player.xp >= 100:
+                self.player.levelUp()
 
             self.draw()
 
@@ -498,9 +480,9 @@ class Game:
             self.damageAmount = damage
             self.damageTimer = pygame.time.get_ticks()
 
-    def spawnEnemy(self, hp, atk):
+    def spawnEnemy(self):
         image = random.choice(self.enemySprites)
-        enemy = Enemy(hp, atk, image)
+        enemy = Enemy(random.randint(1,3)*self.player.level, image)
         self.all_sprites.add(enemy)
         return enemy
 
@@ -523,6 +505,7 @@ class Game:
 
     def gameOverScreen(self):
         running = True
+        self.deathSound.play()
         while running:
             self.clock.tick(FPS)
             # Process input (events)
@@ -533,7 +516,9 @@ class Game:
                 if event.type == pygame.KEYUP:
                     running = False
             self.screen.fill(BLACK)
+            pygame.mixer.music.stop()
             self.drawText(self.mainFont, "GAME OVER!", RED, WIDTH / 2, HEIGHT / 2)
+
             pygame.display.flip()
 
     def drawText(self, typeface, text, color, x, y):
@@ -542,105 +527,6 @@ class Game:
         fontRect = fontSurface.get_rect()
         fontRect.center = (x, y)
         self.screen.blit(fontSurface, fontRect)
-
-
-# all_sprites = pygame.sprite.Group()
-# bg_sprites = pygame.sprite.Group()
-#
-# letterlist = []
-#
-# board=[[0,0,0,0],
-#        [0,0,0,0],
-#        [0,0,0,0],
-#        [0,0,0,0]]
-#
-# for row in range(0,len(board)):
-#     for column in range(0,len(board[row])):
-#         tileInfo = random.choice(list(LETTERSCORES.items()))
-#         tile = Tile(tileInfo[0], str(tileInfo[1]), (WIDTH / 2) + (column * 70) + (column * 10) - 155, (HEIGHT * 0.75) + (row * 70) + (row * 10) - 155)
-#         all_sprites.add(tile)
-#         board[row][column] = tile
-#
-# selectedTile = board[currentY][currentX]
-#
-# enemyHealth = HealthBar(WIDTH * 0.75, 40, 0)
-# playerHealth = HealthBar(WIDTH * 0.25, 40, 5)
-#
-# enemy = spawnEnemy(10, 10)
-#
-# player = Player(10)
-# all_sprites.add(player)
-#
-# selection = Selection(selectedTile.rect.left - 5, selectedTile.rect.top + 5)
-# bg_sprites.add(selection)
-#
-# hud = HUD()
-
-# def spawnEnemy(hp, atk):
-#     enemy = Enemy(hp, atk)
-#     all_sprites.add(enemy)
-#     return enemy
-
-# def cancel():
-#     print(letterlist)
-#     for letter in letterlist[:]:
-#         print(letter.letter, "removed")
-#         letter.kill()
-#         letterlist.remove(letter)
-#     for row in board:
-#         for column in row:
-#             all_sprites.add(column)
-#             column.selected = False
-
-# def wordScore(inputList):
-#     totalScore = 0
-#     wordList = []
-#     for tile in inputList:
-#         totalScore += int(tile.score)
-#         wordList.append(tile.letter.upper())
-#     word = ''.join(wordList)
-#     if len(word) > 2:
-#         if word.lower() in WORDDICT:
-#             for tile in inputList[:]:
-#                 print(tile.letter, "removed")
-#                 tile.kill()
-#                 inputList.remove(tile)
-#             for row in board:
-#                 for column in row:
-#                     if column.selected == True:
-#                         column.randomise()
-#                         all_sprites.add(column)
-#                         column.selected = False
-#             return word, totalScore
-#         else:
-#             return "WORD DOES NOT EXIST!", 0
-#     else:
-#         return "WORD TOO SHORT!", 0
-
-# def damage(damage, recipient):
-#     recipient.health -= damage
-
-# def menu():
-#     currentX = 0
-#     currentY = 0
-#     all_sprites = pygame.sprite.Group()
-#     bg_sprites = pygame.sprite.Group()
-#
-#     running = True
-#     while running:
-#         clock.tick(FPS)
-#         # Process input (events)
-#         for event in pygame.event.get():
-#             # Check for closing window
-#             if event.type == pygame.QUIT:
-#                 pygame.quit()
-#             if event.type == pygame.KEYUP:
-#                 running = False
-#         screen.fill(BLACK)
-#
-#         hud.displayWordScore("PRESS ANY KEY TO CONTINUE")
-#         pygame.display.flip()
-
 
 g = Game()
 g.startMenu()
