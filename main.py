@@ -4,7 +4,6 @@ from constants import *
 from os import path
 
 
-
 class Tile(pygame.sprite.Sprite):
     def __init__(self, game, letter, score, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -164,6 +163,7 @@ class Player(pygame.sprite.Sprite):
         self.xp = self.xp - 100
         self.health += 1
 
+
 class Game:
     def __init__(self):
         # init pygame, create window
@@ -179,8 +179,6 @@ class Game:
         self.smallFont  = self.getFont('FSEX302.ttf', 25)
         self.tileLetterFont = pygame.font.SysFont('Times New Roman', 36)
         self.tileScoreFont = pygame.font.SysFont('Times New Roman', 16)
-        # self.currentX = 0
-        # self.currentY = 0
         # load directories
         self.dir = path.dirname(__file__)
         self.sndDir = path.join(self.dir, 'sounds')
@@ -189,11 +187,14 @@ class Game:
         self.dmgSound = pygame.mixer.Sound(path.join(self.sndDir, 'shoot.wav'))
         self.hurtSound = pygame.mixer.Sound(path.join(self.sndDir, 'hurt.wav'))
         self.deathSound = pygame.mixer.Sound(path.join(self.sndDir, 'die.wav'))
+        self.selectSound = pygame.mixer.Sound(path.join(self.sndDir, 'select.wav'))
+        self.clearSound = pygame.mixer.Sound(path.join(self.sndDir, 'clear.wav'))
         pygame.mixer.music.load(path.join(self.sndDir, 'music.ogg'))
         # load enemy sprites
         self.enemySprites = []
         for i in range(1,4):
             self.enemySprites.append(pygame.image.load(path.join(self.spriteDir, 'enemy{}.png'.format(i))))
+
         self.damageCounter = False
         self.gameOver = False
 
@@ -207,6 +208,7 @@ class Game:
         self.letterlist = []
         self.boardRect = pygame.Rect(WIDTH / 2 - 165, HEIGHT / 2 + 15, 330, 330)
 
+        pygame.mixer.music.set_volume(0.7)
         pygame.mixer.music.play(loops=-1)
         self.board = [[0, 0, 0, 0],
                       [0, 0, 0, 0],
@@ -270,7 +272,6 @@ class Game:
         self.player.drawXP(self.playerHealth.rect.x , self.playerHealth.rect.y + 40)
         self.drawText(self.smallFont, "XP: "+str(self.player.xp)+" / 100", WHITE, self.player.bgrect.centerx, self.player.bgrect.centery)
 
-
         if self.playerAttacking:
             self.drawText(self.mainFont, self.displayWord + " : " + str(self.displayScore) + " POINTS", WHITE, WIDTH / 2, (HEIGHT / 2) - 10)
 
@@ -282,8 +283,6 @@ class Game:
                 self.damageCounter = False
 
         for tile in self.tiles:
-            # self.screen.blit(tile.letterRender, (tile.rect.centerx - (self.letterFont.size(self.letter)[0] / 2.), self.rect.centery - (self.letterFont.size(self.letter)[1] / 2.)))
-            # self.screen.blit(tile.scoreRender, (tile.rect.right - (self.scoreFont.size(self.score)[0]) - 2, self.rect.bottom - (self.scoreFont.size(self.score)[1])))
             if tile.selected == False:
                 self.drawText(self.tileLetterFont, tile.letter, BLACK, tile.rect.centerx, tile.rect.centery)
                 self.drawText(self.tileScoreFont, tile.score, BLACK, (tile.rect.right - (self.tileScoreFont.size(tile.score)[0] / 2.) - 2), (tile.rect.bottom - (self.tileScoreFont.size(tile.score)[1] / 2.)))
@@ -295,7 +294,6 @@ class Game:
                 self.all_sprites.add(tile)
 
         self.projectiles.draw(self.screen)
-
 
 
         # flip display
@@ -345,7 +343,9 @@ class Game:
                                 self.selection.move(self.selectedTile)
                     if event.key == pygame.K_z and self.selectedTile.selected == False:
                         self.selectedTile.select()
+                        self.selectSound.play()
                     if event.key == pygame.K_x:
+                        self.clearSound.play()
                         self.cancel()
                     if event.key == pygame.K_c:
                         if len(self.letterlist) > 0:
@@ -473,12 +473,17 @@ class Game:
     def damage(self, damage, recipient):
         recipient.health -= damage
         if damage > 0:
-            self.drawText(self.mainFont, "-"+str(damage)+"!", RED, recipient.rect.x, recipient.rect.y)
             self.dmgSound.play()
             self.damageCounter = True
             self.damageRecipient = recipient
             self.damageAmount = damage
             self.damageTimer = pygame.time.get_ticks()
+        # else:
+        #     self.drawText(self.mainFont, "MISS!", RED, recipient.rect.x, recipient.rect.y)
+        #     self.damageCounter = True
+        #     self.damageRecipient = recipient
+        #     self.damageAmount = damage
+        #     self.damageTimer = pygame.time.get_ticks()
 
     def spawnEnemy(self):
         image = random.choice(self.enemySprites)
@@ -527,6 +532,7 @@ class Game:
         fontRect = fontSurface.get_rect()
         fontRect.center = (x, y)
         self.screen.blit(fontSurface, fontRect)
+
 
 g = Game()
 g.startMenu()
