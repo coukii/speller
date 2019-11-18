@@ -127,7 +127,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.bottom = 300
         self.rect.right = WIDTH - 100
         self.health = health
-        self.cooldown = 400
+        self.cooldown = 1000
 
     def attack(self):
         projectile = Projectile()
@@ -135,6 +135,20 @@ class Enemy(pygame.sprite.Sprite):
 
     def die(self):
         self.kill()
+
+
+class Boss(Enemy):
+    def __init__(self, image):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        size = self.image.get_size()
+        self.image = pygame.transform.scale(self.image, (int(size[0]/1.2), int(size[1]/1.2)))
+
+        self.rect = self.image.get_rect()
+        self.rect.bottom = 300
+        self.rect.right = WIDTH - 100
+        self.health = 12
+        self.cooldown = 500
 
 
 class Player(pygame.sprite.Sprite):
@@ -185,11 +199,16 @@ class Game:
         self.spriteDir = path.join(self.dir, 'sprites')
         # load sounds
         self.dmgSound = pygame.mixer.Sound(path.join(self.sndDir, 'shoot.wav'))
+        self.dmgSound.set_volume(0.2)
         self.hurtSound = pygame.mixer.Sound(path.join(self.sndDir, 'hurt.wav'))
+        self.hurtSound.set_volume(0.4)
         self.deathSound = pygame.mixer.Sound(path.join(self.sndDir, 'die.wav'))
+        self.deathSound.set_volume(0.2)
         self.selectSound = pygame.mixer.Sound(path.join(self.sndDir, 'select.wav'))
+        self.selectSound.set_volume(0.2)
         self.clearSound = pygame.mixer.Sound(path.join(self.sndDir, 'clear.wav'))
-        pygame.mixer.music.load(path.join(self.sndDir, 'music.ogg'))
+        self.clearSound.set_volume(0.4)
+
         # load enemy sprites
         self.enemySprites = []
         for i in range(1,4):
@@ -207,8 +226,10 @@ class Game:
         self.projectiles = pygame.sprite.Group()
         self.letterlist = []
         self.boardRect = pygame.Rect(WIDTH / 2 - 165, HEIGHT / 2 + 15, 330, 330)
+        self.enemiesKilled = 10
 
-        pygame.mixer.music.set_volume(0.7)
+        pygame.mixer.music.load(path.join(self.sndDir, 'music.ogg'))
+        pygame.mixer.music.set_volume(0.35  )
         pygame.mixer.music.play(loops=-1)
         self.board = [[0, 0, 0, 0],
                       [0, 0, 0, 0],
@@ -269,8 +290,10 @@ class Game:
         self.playerHealth.update(self.player.health)
         self.drawText(self.mainFont, str(self.gameScore), WHITE, WIDTH / 2, 40)
 
+        # draw xp bar
         self.player.drawXP(self.playerHealth.rect.x , self.playerHealth.rect.y + 40)
         self.drawText(self.smallFont, "XP: "+str(self.player.xp)+" / 100", WHITE, self.player.bgrect.centerx, self.player.bgrect.centery)
+        self.drawText(self.smallFont, "LV "+str(self.player.level), WHITE, self.player.bgrect.right + 50, self.player.bgrect.centery)
 
         if self.playerAttacking:
             self.drawText(self.mainFont, self.displayWord + " : " + str(self.displayScore) + " POINTS", WHITE, WIDTH / 2, (HEIGHT / 2) - 10)
@@ -294,6 +317,7 @@ class Game:
                 self.all_sprites.add(tile)
 
         self.projectiles.draw(self.screen)
+
 
 
         # flip display
@@ -380,10 +404,16 @@ class Game:
                 self.hurtSound.play()
 
             now = pygame.time.get_ticks()
-            if now - shot_timer > 1000:
+            if now - shot_timer > self.enemy.cooldown:
                 shot_timer = now
                 projectile = Projectile(self)
                 self.projectiles.add(projectile)
+
+
+            if self.player.xp >= 100:
+                self.player.levelUp()
+
+            self.draw()
 
             if self.player.health <= 0:
                 self.running = False
@@ -391,14 +421,14 @@ class Game:
                 self.gameOverScreen()
 
             if self.enemy.health <= 0:
+                if self.enemiesKilled >= 10:
+                    self.running = False
+                    looping = False
+                    self.winScreen()
+                self.enemiesKilled += 1
                 self.enemy.die()
                 self.player.xp += 30
                 self.enemy = self.spawnEnemy()
-
-            if self.player.xp >= 100:
-                self.player.levelUp()
-
-            self.draw()
 
     def theirTurn(self):
         self.projectiles.empty()
@@ -486,14 +516,23 @@ class Game:
         #     self.damageTimer = pygame.time.get_ticks()
 
     def spawnEnemy(self):
-        image = random.choice(self.enemySprites)
-        enemy = Enemy(random.randint(1,3)*self.player.level, image)
-        self.all_sprites.add(enemy)
-        return enemy
+        if self.enemiesKilled <= 9:
+            image = random.choice(self.enemySprites)
+            enemy = Enemy(random.randint(1,3)*self.player.level, image)
+            self.all_sprites.add(enemy)
+            return enemy
+        else:
+            enemy = Boss(pygame.image.load(path.join(self.spriteDir, "boss.png")).convert_alpha())
+            self.all_sprites.add(enemy)
+            return enemy
 
     def startMenu(self):
         running = True
         titleFont = self.getFont('FSEX302.ttf', 130)
+        smallFont = self.getFont('FSEX302.ttf', 20)
+        pygame.mixer.music.load(path.join(self.sndDir, 'menu.ogg'))
+        pygame.mixer.music.set_volume(0.7)
+        pygame.mixer.music.play(loops=-1)
         while running:
             self.clock.tick(FPS)
             # Process input (events)
@@ -506,11 +545,11 @@ class Game:
             self.screen.fill(BLACK)
             self.drawText(titleFont, "SPELLER", WHITE, WIDTH / 2, HEIGHT * 0.25)
             self.drawText(self.mainFont, "PRESS ANY KEY TO CONTINUE", WHITE, WIDTH / 2, HEIGHT * 0.75)
+            self.drawText(smallFont, "MUSIC BY TREVOR LENTZ", WHITE, WIDTH - 120, HEIGHT - 20)
             pygame.display.flip()
 
     def gameOverScreen(self):
         running = True
-        self.deathSound.play()
         while running:
             self.clock.tick(FPS)
             # Process input (events)
@@ -521,8 +560,26 @@ class Game:
                 if event.type == pygame.KEYUP:
                     running = False
             self.screen.fill(BLACK)
-            pygame.mixer.music.stop()
+
             self.drawText(self.mainFont, "GAME OVER!", RED, WIDTH / 2, HEIGHT / 2)
+
+            pygame.display.flip()
+
+    def winScreen(self):
+        running = True
+        pygame.mixer.music.stop()
+        while running:
+            self.clock.tick(FPS)
+            # Process input (events)
+            for event in pygame.event.get():
+                # Check for closing window
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                if event.type == pygame.KEYUP:
+                    running = False
+            self.screen.fill(BLACK)
+
+            self.drawText(self.mainFont, "YOU WIN!", GREEN, WIDTH / 2, HEIGHT / 2)
 
             pygame.display.flip()
 
