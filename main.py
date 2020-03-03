@@ -226,7 +226,7 @@ class Game:
         self.projectiles = pygame.sprite.Group()
         self.letterlist = []
         self.boardRect = pygame.Rect(WIDTH / 2 - 165, HEIGHT / 2 + 15, 330, 330)
-        self.enemiesKilled = 10
+        self.enemiesKilled = 0
 
         pygame.mixer.music.load(path.join(self.sndDir, 'music.ogg'))
         pygame.mixer.music.set_volume(0.35  )
