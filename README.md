@@ -1,5 +1,5 @@
 # Speller
-RPG battler with word-spelling gameplay made in Pygame.
+RPG battler with word-spelling gameplay made in Pygame. Type "python main.py" in cmd to play.
 
 
 Instructions:
